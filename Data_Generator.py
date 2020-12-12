@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 
 def sequence_generator():
-    points = [i for i in range(1, 10)]
+    points = [i for i in range(1, 8)]
     return itertools.permutations(points)
 
 
@@ -88,8 +88,8 @@ class TSPDataset(Dataset):
         for i, _ in enumerate(data_iter):
             data_iter.set_description('Data points %i/%i' % (i+1, self.data_size))
 
-            nodes = np.random.rand(10, 2)
-            weights = np.random.randint(1, 30, size=(10, 1), dtype=int)
+            nodes = np.random.rand(self.seq_len, 2)
+            weights = np.random.randint(1, 30, size=(self.seq_len, 1), dtype=int)
             weights[0, 0] = 0
             points = np.append(nodes, weights, axis=1)
 
@@ -121,7 +121,6 @@ class TSPDataset(Dataset):
 
 
 if __name__ == '__main__':
-    # dataset = TSPDataset(200, 10)
-    # np.save('TestSet.npy', dataset)
-    # print('Success!')
-    pass
+    dataset = TSPDataset(200, 8)
+    np.save('TestSet8.npy', dataset)
+    print('Success!')

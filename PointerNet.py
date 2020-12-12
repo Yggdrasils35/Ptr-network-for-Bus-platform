@@ -28,7 +28,7 @@ class Encoder(nn.Module):
         self.hidden_dim = hidden_dim//2 if bidir else hidden_dim
         self.n_layers = n_layers*2 if bidir else n_layers
         self.bidir = bidir
-        self.lstm = nn.LSTM(embedding_dim,
+        self.gru = nn.GRU(embedding_dim,
                             self.hidden_dim,
                             n_layers,
                             dropout=dropout,
@@ -50,7 +50,7 @@ class Encoder(nn.Module):
 
         embedded_inputs = embedded_inputs.permute(1, 0, 2)
 
-        outputs, hidden = self.lstm(embedded_inputs, hidden)
+        outputs, hidden = self.gru(embedded_inputs, hidden)
 
         return outputs.permute(1, 0, 2), hidden
 
@@ -59,7 +59,7 @@ class Encoder(nn.Module):
         Initiate hidden units
 
         :param Tensor embedded_inputs: The embedded input of Pointer-NEt
-        :return: Initiated hidden units for the LSTMs (h, c)
+        :return: Initiated hidden units for the GRUs (h)
         """
 
         batch_size = embedded_inputs.size(0)
@@ -68,11 +68,11 @@ class Encoder(nn.Module):
         h0 = self.h0.unsqueeze(0).unsqueeze(0).repeat(self.n_layers,
                                                       batch_size,
                                                       self.hidden_dim)
-        c0 = self.h0.unsqueeze(0).unsqueeze(0).repeat(self.n_layers,
-                                                      batch_size,
-                                                      self.hidden_dim)
+        # c0 = self.h0.unsqueeze(0).unsqueeze(0).repeat(self.n_layers,
+        #                                               batch_size,
+        #                                               self.hidden_dim)
 
-        return h0, c0
+        return h0
 
 
 class Attention(nn.Module):
@@ -203,11 +203,11 @@ class Decoder(nn.Module):
 
             :param Tensor x: Input at time t
             :param tuple(Tensor, Tensor) hidden: Hidden states at time t-1
-            :return: Hidden states at time t (h, c), Attention probabilities (Alpha)
+            :return: Hidden states at time t (h), Attention probabilities (Alpha)
             """
 
             # Regular LSTM
-            h, c = hidden
+            h = hidden[0]
 
             gates = self.input_to_hidden(x) + self.hidden_to_hidden(h)
             input, forget, cell, out = gates.chunk(4, 1)
@@ -217,7 +217,7 @@ class Decoder(nn.Module):
             cell = F.tanh(cell)
             out = F.sigmoid(out)
 
-            c_t = (forget * c) + (input * cell)
+            c_t = (forget * h) + (input * cell)
             h_t = out * F.tanh(c_t)
 
             # Attention section
@@ -261,7 +261,7 @@ class PointerNet(nn.Module):
 
     def __init__(self, embedding_dim,
                  hidden_dim,
-                 lstm_layers,
+                 gru_layers,
                  dropout,
                  bidir=False):
         """
@@ -280,7 +280,7 @@ class PointerNet(nn.Module):
         self.embedding = nn.Linear(3, embedding_dim)
         self.encoder = Encoder(embedding_dim,
                                hidden_dim,
-                               lstm_layers,
+                               gru_layers,
                                dropout,
                                bidir)
         self.decoder = Decoder(embedding_dim, hidden_dim)

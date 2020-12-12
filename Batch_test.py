@@ -1,3 +1,7 @@
+"""
+using TestSet(200 data)
+"""
+
 import torch
 import torch.optim as optim
 import torch.backends.cudnn as cudnn
@@ -59,47 +63,61 @@ def main():
                        params.bidir)
 
     print('Loading model...')
-    model.load_state_dict(torch.load('parameterGRU.pkl'))
+    model.load_state_dict(torch.load('GRU128-200.pkl'))
     print('Loaded finished!')
 
-    test_num = 3
-    test_point_num = 10
-    point_array = np.random.rand(test_num, test_point_num, 2)
-    nodes = np.random.rand(test_num, test_point_num, 2)
-    weights = np.random.randint(1, 30, size=(test_num, test_point_num, 1), dtype=int)
-    weights[:, 0, 0] = 0
-    points_for_test = np.append(nodes, weights/30, axis=2)
-    points = np.append(nodes, weights, axis=2)
+    dataset = np.load('TestSet.npy', allow_pickle=True)
 
-    point_tensor = torch.tensor(points_for_test, dtype=torch.float)
+    test_num = 200
+    dataloader = DataLoader(dataset,
+                            batch_size=test_num,
+                            shuffle=True,
+                            num_workers=0)
 
-    o, p = model(point_tensor)
-    solutions = np.array(p)
-    arr = np.array(list(range(1, test_point_num)))
+    points = []
+    solutions = []
+    solutions_opt = []
+    arr = np.array(list(range(1, 10)))
     opt_list = []
     test_list = []
     random_list = []
     error_list = []
 
-    sequences = []
-    pre_sequences = sequence_generator()
-    for sequence in pre_sequences:
-        sequence = list(sequence)
-        sequences.append(sequence)
+    for i_batch, sample_batched in enumerate(dataloader):
+        # solution.append(sample_batched['Solution'])
+        train_batch = Variable(sample_batched['Points'])
+        target_batch = Variable(sample_batched['Solution'])
 
-    # show the result
+        o, p = model(train_batch)
+
+        solutions = np.array(p)  # get the tested solutions
+
+        # get the points for the test
+        for i in range(test_num):
+            point_tensor = train_batch[i]
+            solution_tensor = list(target_batch[i])
+            solution_tensor.insert(0, 0)
+            solutions_opt.append(solution_tensor)
+            points_list = []
+            for point in point_tensor:
+                points_list.append(list(point))
+            points.append(points_list)
+        points = np.array(points)
+        solutions_opt = np.array(solutions_opt)
+
     for i in range(test_num):
         point = points[i]
+        point[:, 2] *= 30
         depot = point[0, :2]
         depot = depot[np.newaxis, :]
         nodes = point[1:]
         solution = solutions[i]
         weights = points[:, 2]
-        cost = get_cost(depot, nodes, solution)  # test solution
+        cost = get_cost(depot, nodes, solution)
 
-        solution_opt = np.pad(get_solution(depot, nodes, sequences), (1, 0))  # optimized solution
+        solution_opt = solutions_opt[i]
         cost_opt = get_cost(depot, nodes, solution_opt)
-        
+
         solution_random = np.random.permutation(arr)
         solution_random = np.pad(solution_random, (1, 0))
         cost_random = get_cost(depot, nodes, solution_random)  # random solution
@@ -118,32 +136,41 @@ def main():
         print(solution_random, 'cost is ', cost_random, '(Random solution)')
         print('The cost error is {0:.2f}%'.format(error_opt), '\n')
 
-        plt.figure(i, (7, 7))
+        if i % 20 == 0:
+            plt.figure(i, (7, 7))
 
-        plt.subplot(221)
-        plt.title('Optimized solution')
-        plt.scatter(point[:, 0], point[:, 1], s=weights)
-        plt.plot(point[solution_opt][:, 0], point[solution_opt][:, 1], 'r')
+            plt.subplot(221)
+            plt.title('Optimized solution')
+            plt.scatter(point[:, 0], point[:, 1], s=weights)
+            plt.plot(point[solution_opt][:, 0], point[solution_opt][:, 1], 'r')
 
-        plt.subplot(222)
-        plt.title('Test solution')
-        plt.scatter(point[:, 0], point[:, 1], s=weights)
-        plt.plot(point[solution][:, 0], point[solution][:, 1], 'b')
+            plt.subplot(222)
+            plt.title('Test solution')
+            plt.scatter(point[:, 0], point[:, 1], s=weights)
+            plt.plot(point[solution][:, 0], point[solution][:, 1], 'b')
 
-        plt.subplot(223)
-        plt.title('Random solution')
-        plt.scatter(point[:, 0], point[:, 1], s=weights)
-        plt.plot(point[solution_random][:, 0], point[solution_random][:, 1], 'y')
+            plt.subplot(223)
+            plt.title('Random solution')
+            plt.scatter(point[:, 0], point[:, 1], s=weights)
+            plt.plot(point[solution_random][:, 0], point[solution_random][:, 1], 'y')
 
-        plt.subplot(224)
-        plt.title('cost Comparison')
-        plt.barh(range(3), cost_list, tick_label=['Rand', 'Opt', 'Test'], height=0.3)
+            plt.subplot(224)
+            plt.title('cost Comparison')
+            plt.barh(range(3), cost_list, tick_label=['Rand', 'Opt', 'Test'], height=0.3)
 
-    plt.figure(10, (7, 5))
+    plt.figure(figsize=(7, 5))
     plt.title('Total result')
     x = range(1, test_num+1)
-    plt.plot(x, opt_list, '.-', x, test_list, '.-', x, random_list, '.-')
+    plt.plot(x, opt_list, '-', x, test_list, '-', x, random_list, '-')
 
+    plt.figure(figsize=(7, 5))
+    plt.title('Total result')
+    x = range(1, test_num + 1)
+    plt.plot(x, error_list, '.-')
+
+    error_arr = np.array(error_list)
+    sum = error_arr == 0
+    print(error_arr[sum].shape)
     print(np.mean(error_list))
     plt.show()
 
