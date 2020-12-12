@@ -1,12 +1,7 @@
 import torch
-import torch.optim as optim
-import torch.backends.cudnn as cudnn
-from torch.autograd import Variable
-from torch.utils.data import DataLoader
 
 import numpy as np
 import argparse
-from tqdm import tqdm
 
 from PointerNet import PointerNet
 from Data_Generator import TSPDataset
@@ -15,8 +10,6 @@ from Data_Generator import get_solution
 from Data_Generator import get_cost
 
 import matplotlib.pyplot as plt
-import itertools
-import math
 
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -59,7 +52,7 @@ def main():
                        params.bidir)
 
     print('Loading model...')
-    model.load_state_dict(torch.load('parameterGRU.pkl'))
+    model.load_state_dict(torch.load('./Parameters/parameterGRU.pkl'))
     print('Loaded finished!')
 
     test_num = 3

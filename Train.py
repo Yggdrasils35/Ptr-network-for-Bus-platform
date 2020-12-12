@@ -17,11 +17,8 @@ import argparse
 from tqdm import tqdm
 
 from PointerNet import PointerNet
-from Data_Generator import TSPDataset
 
 import matplotlib.pyplot as plt
-import itertools
-import math
 
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -66,10 +63,10 @@ def main():
                        params.bidir)
 
     print('Loading model...')
-    model.load_state_dict(torch.load('GRU128-200.pkl'))
+    model.load_state_dict(torch.load('./Parameters/GRU128-200.pkl'))
     print('Loaded finished!')
 
-    dataset = np.load('TrainSet.npy', allow_pickle=True)
+    dataset = np.load('./DataSets/TrainSet.npy', allow_pickle=True)
     # dataset: list of points and solutions(sequences)
 
     dataloader = DataLoader(dataset,
@@ -93,7 +90,6 @@ def main():
         batch_loss = []
         iterator = tqdm(dataloader, unit='Batch')
         for i_batch, sample_batched in enumerate(iterator):
-            # solution.append(sample_batched['Solution'])
             iterator.set_description('Epoch %i/%i' % (epoch + 1, params.nof_epoch))
 
             train_batch = Variable(sample_batched['Points'])
@@ -122,7 +118,7 @@ def main():
         losses.append(mean_loss)
         iterator.set_postfix(loss=mean_loss)
 
-    torch.save(model.state_dict(), 'GRU128-200.pkl')
+    torch.save(model.state_dict(), './Parameters/GRU128-200.pkl')
     plt.plot(losses)
     plt.show()
 

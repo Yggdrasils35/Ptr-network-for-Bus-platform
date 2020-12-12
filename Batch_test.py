@@ -3,24 +3,16 @@ using TestSet(200 data)
 """
 
 import torch
-import torch.optim as optim
-import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 
 import numpy as np
 import argparse
-from tqdm import tqdm
 
 from PointerNet import PointerNet
-from Data_Generator import TSPDataset
-from Data_Generator import sequence_generator
-from Data_Generator import get_solution
 from Data_Generator import get_cost
 
 import matplotlib.pyplot as plt
-import itertools
-import math
 
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -63,10 +55,10 @@ def main():
                        params.bidir)
 
     print('Loading model...')
-    model.load_state_dict(torch.load('GRU128-200.pkl'))
+    model.load_state_dict(torch.load('./Parameters/parameterGRU64.pkl'))
     print('Loaded finished!')
 
-    dataset = np.load('TestSet.npy', allow_pickle=True)
+    dataset = np.load('./DataSets/TestSet.npy', allow_pickle=True)
 
     test_num = 200
     dataloader = DataLoader(dataset,

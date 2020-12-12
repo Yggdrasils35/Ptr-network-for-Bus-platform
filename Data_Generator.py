@@ -2,7 +2,6 @@ import torch
 from torch.utils.data import Dataset
 import numpy as np
 import itertools
-import time
 from tqdm import tqdm
 
 
@@ -82,7 +81,6 @@ class TSPDataset(Dataset):
         :return: Set of points_list ans their One-Hot vector solutions
         """
         points_list = []
-        weights_list = []
         solutions = []
         data_iter = tqdm(range(self.data_size), unit='data')
         for i, _ in enumerate(data_iter):
@@ -122,5 +120,5 @@ class TSPDataset(Dataset):
 
 if __name__ == '__main__':
     dataset = TSPDataset(200, 8)
-    np.save('TestSet8.npy', dataset)
+    np.save('./DataSets/TestSet8.npy', dataset)
     print('Success!')
